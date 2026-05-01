@@ -1,0 +1,15 @@
+# Dockerfile for running tests
+FROM eclipse-temurin:23-jdk
+
+WORKDIR /app
+
+COPY build.gradle settings.gradle ./
+COPY gradle/ ./gradle/
+COPY src/ ./src/
+
+RUN mkdir -p build/classes build/test-classes && \
+    javac -d build/classes src/main/java/com/pricing/*.java && \
+    javac -cp build/classes -d build/test-classes src/test/java/com/pricing/*.java
+
+# Entry point for tests
+ENTRYPOINT ["java", "-cp", "build/classes:build/test-classes", "org.junit.platform.console.ConsoleLauncher", "--scan-classpath"]
