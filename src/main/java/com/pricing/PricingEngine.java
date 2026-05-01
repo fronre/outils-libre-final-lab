@@ -33,13 +33,9 @@ public class PricingEngine {
             }
         }
         
-        // Handle discount (monolithic logic)
-        double disc = 0;
-        if (customer.equals(PricingConstants.CUSTOMER_TYPE_VIP)) {
-            disc = sub * PricingConstants.VIP_DISCOUNT_RATE;
-        } else if (customer.equals(PricingConstants.CUSTOMER_TYPE_REGULAR)) {
-            disc = sub * PricingConstants.REGULAR_DISCOUNT_RATE;
-        }
+        // Get customer discount strategy
+        DiscountStrategy customerStrategy = DiscountStrategyFactory.getStrategy(customer);
+        double disc = customerStrategy.calculateDiscount(sub);
         
         // Apply code discount (hard-coded)
         if (code != null && code.length() > 0) {
