@@ -1,0 +1,43 @@
+# Gradle
+.gradle/
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+gradle-wrapper.jar
+gradle-wrapper.properties
+
+# Java
+*.class
+*.jar
+*.log
+*.ctxt
+.mtj.tmp/
+*.ear
+*.zip
+*.tar.gz
+*.rar
+.classpath
+.project
+.c9/
+
+# IDEs
+.idea/
+*.swp
+*.swo
+*~
+.vscode/
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
