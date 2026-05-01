@@ -16,59 +16,101 @@ import java.util.Map;
  */
 public class PricingEngine {
     
-    // All logic crammed into one method
-    public double calc(double[] prices, int[] qtys, String customer, String code) {
-        // Mixing all logic together
-        double sub = 0;
-        
-        // No validation
-        if (prices == null || qtys == null) {
-            return -1; // Bad error handling
+    private InvoicePrinter invoicePrinter;
+    
+    public PricingEngine() {
+        this.invoicePrinter = new InvoicePrinter();
+    }
+    
+    /**
+     * Calculate pricing and return detailed invoice.
+     */
+    public Invoice calculate(double[] prices, int[] quantities, String customerType, String discountCode) {
+        // Validation
+        if (prices == null || quantities == null) {
+            throw new IllegalArgumentException("Prices and quantities cannot be null");
         }
         
-        // Calculate subtotal (poorly done)
-        for (int i = 0; i < prices.length; i++) {
-            if (i < qtys.length) {
-                sub += prices[i] * qtys[i];
-            }
-        }
+        // Calculate subtotal
+        double subtotal = computeSubtotal(prices, quantities);
         
-        // Get customer discount strategy
-        DiscountStrategy customerStrategy = DiscountStrategyFactory.getStrategy(customer);
-        double disc = customerStrategy.calculateDiscount(sub);
-        
-        // Apply code discount (hard-coded)
-        if (code != null && code.length() > 0) {
-            if (code.equals(PricingConstants.DISCOUNT_CODE_SAVE10)) {
-                double codeDisc = sub * PricingConstants.DISCOUNT_CODE_SAVE10_RATE;
-                if (codeDisc > disc) {
-                    disc = codeDisc;
-                }
-            } else if (code.equals(PricingConstants.DISCOUNT_CODE_SAVE20)) {
-                double codeDisc = sub * PricingConstants.DISCOUNT_CODE_SAVE20_RATE;
-                if (codeDisc > disc) {
-                    disc = codeDisc;
-                }
-            }
-        }
+        // Calculate discount
+        double discount = computeDiscount(subtotal, customerType, discountCode);
         
         // Calculate tax and final price
-        double afterDisc = sub - disc;
-        double tax = afterDisc * PricingConstants.DEFAULT_TAX_RATE;
-        double final_price = afterDisc + tax;
+        double afterDiscount = subtotal - discount;
+        double tax = afterDiscount * PricingConstants.DEFAULT_TAX_RATE;
+        double finalPrice = afterDiscount + tax;
         
-        // Returning just one value - how will we get individual breakdown?
-        return final_price;
+        // Create and return invoice
+        return new Invoice(prices, quantities, customerType, discountCode,
+                           subtotal, discount, tax, finalPrice);
+    }
+    
+    /**
+     * Calculate subtotal from prices and quantities.
+     */
+    private double computeSubtotal(double[] prices, int[] quantities) {
+        double subtotal = 0;
+        for (int i = 0; i < prices.length; i++) {
+            if (i < quantities.length) {
+                subtotal += prices[i] * quantities[i];
+            }
+        }
+        return subtotal;
+    }
+    
+    /**
+     * Calculate the best available discount.
+     */
+    private double computeDiscount(double subtotal, String customerType, String discountCode) {
+        // Get customer type discount
+        DiscountStrategy customerStrategy = DiscountStrategyFactory.getStrategy(customerType);
+        double customerDiscount = customerStrategy.calculateDiscount(subtotal);
+        double bestDiscount = customerDiscount;
+        
+        // Compare with code discount if provided
+        if (discountCode != null && !discountCode.isEmpty()) {
+            double codeDiscount = getCodeDiscount(subtotal, discountCode);
+            bestDiscount = Math.max(bestDiscount, codeDiscount);
+        }
+        
+        return bestDiscount;
+    }
+    
+    /**
+     * Get discount amount for a discount code.
+     */
+    private double getCodeDiscount(double subtotal, String code) {
+        if (code.equals(PricingConstants.DISCOUNT_CODE_SAVE10)) {
+            return subtotal * PricingConstants.DISCOUNT_CODE_SAVE10_RATE;
+        } else if (code.equals(PricingConstants.DISCOUNT_CODE_SAVE20)) {
+            return subtotal * PricingConstants.DISCOUNT_CODE_SAVE20_RATE;
+        }
+        return 0;
+    }
+    
+    /**
+     * Legacy method: calculate final price (keeps backward compatibility).
+     */
+    public double calc(double[] prices, int[] qtys, String customer, String code) {
+        try {
+            Invoice invoice = calculate(prices, qtys, customer, code);
+            return invoice.getFinalPrice();
+        } catch (IllegalArgumentException e) {
+            return -1; // Error indicator
+        }
     }
     
     public static void main(String[] args) {
-        PricingEngine pe = new PricingEngine();
+        PricingEngine engine = new PricingEngine();
+        InvoicePrinter printer = new InvoicePrinter();
         
         // Example usage
         double[] prices = {10.0, 20.0, 30.0};
         int[] quantities = {1, 2, 1};
         
-        double result = pe.calc(prices, quantities, "VIP", "SAVE20");
-        System.out.println("Final Price: $" + result);
+        Invoice invoice = engine.calculate(prices, quantities, "VIP", "SAVE20");
+        printer.print(invoice);
     }
 }
