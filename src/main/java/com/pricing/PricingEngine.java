@@ -25,17 +25,17 @@ public class PricingEngine {
     /**
      * Calculate pricing and return detailed invoice.
      */
-    public Invoice calculate(double[] prices, int[] quantities, String customerType, String discountCode) {
+    public Invoice calculate(PricingRequest request) {
         // Validation
-        if (prices == null || quantities == null) {
+        if (request.getPrices() == null || request.getQuantities() == null) {
             throw new IllegalArgumentException("Prices and quantities cannot be null");
         }
         
         // Calculate subtotal
-        double subtotal = computeSubtotal(prices, quantities);
+        double subtotal = computeSubtotal(request.getPrices(), request.getQuantities());
         
         // Calculate discount
-        double discount = computeDiscount(subtotal, customerType, discountCode);
+        double discount = computeDiscount(subtotal, request.getCustomerType(), request.getDiscountCode());
         
         // Calculate tax and final price
         double afterDiscount = subtotal - discount;
@@ -43,8 +43,23 @@ public class PricingEngine {
         double finalPrice = afterDiscount + tax;
         
         // Create and return invoice
-        return new Invoice(prices, quantities, customerType, discountCode,
+        return new Invoice(request.getPrices(), request.getQuantities(), 
+                           request.getCustomerType(), request.getDiscountCode(),
                            subtotal, discount, tax, finalPrice);
+    }
+    
+    /**
+     * Legacy method overload: calculate from individual parameters.
+     * Uses PricingRequest internally.
+     */
+    public Invoice calculate(double[] prices, int[] quantities, String customerType, String discountCode) {
+        PricingRequest request = new PricingRequest.Builder()
+            .prices(prices)
+            .quantities(quantities)
+            .customerType(customerType)
+            .discountCode(discountCode)
+            .build();
+        return calculate(request);
     }
     
     /**
